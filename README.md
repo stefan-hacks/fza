@@ -45,7 +45,7 @@
 
 ```bash
 # Download the script
-curl -o fza https://raw.githubusercontent.com/YOUR_USERNAME/fza/main/fza.sh
+curl -o fza https://raw.githubusercontent.com/stefan-hacks/fza/main/fza.sh
 
 # Make it executable
 chmod +x fza
