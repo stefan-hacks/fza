@@ -632,7 +632,7 @@ upgrade_packages() {
   local pkg_manager
   pkg_manager=$(get_package_manager)
 
-  if ! $pkg_manager upgrade -y; then
+  if ! $pkg_manager full-upgrade -y; then
     echo -e "${RED}${ICON_CROSS} Upgrade failed!${RESET}"
     read -p "Press ENTER to return to menu..."
     show_main_menu
