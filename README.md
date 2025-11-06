@@ -67,7 +67,7 @@ sudo apt update && sudo apt install -y nala
 
 1. **Clone the repository:**
 ```bash
-git clone https://github.com/YOUR_USERNAME/fza.git
+git clone https://github.com/stefan-hacks/fza.git
 cd fza
 ```
 
