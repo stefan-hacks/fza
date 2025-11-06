@@ -55,7 +55,7 @@ sudo mv fza /usr/local/bin/
 
 # Install dependencies
 sudo apt update
-sudo apt install -y fzf bat
+sudo apt install -y nala fzf bat
 
 # Optional: Install nala for better performance
 echo "deb https://deb.volian.org/volian/ scar main" | sudo tee /etc/apt/sources.list.d/volian-archive-scar-unstable.list
