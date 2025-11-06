@@ -74,7 +74,7 @@ cd fza
 2. **Install dependencies:**
 ```bash
 sudo apt update
-sudo apt install -y fzf bat
+sudo apt install -y nala fzf bat
 ```
 
 3. **Install nala (optional but recommended):**
