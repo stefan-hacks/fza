@@ -20,6 +20,7 @@ readonly RESET=$'\033[0m'
 
 # Icons
 readonly ICON_SEARCH="🔍"
+# shellcheck disable=SC2034
 readonly ICON_INSTALL="📦"
 readonly ICON_REMOVE="🗑️"
 readonly ICON_UPDATE="🔄"
@@ -29,6 +30,7 @@ readonly ICON_LIST="📋"
 readonly ICON_CHECK="✓"
 readonly ICON_CROSS="✗"
 readonly ICON_WARNING="⚠️"
+# shellcheck disable=SC2034
 readonly ICON_BAT="🦇"
 
 # Configuration
@@ -220,7 +222,7 @@ show_keybinds() {
 
 Press any key to continue...
 EOF
-  read -n 1 -s
+  read -r -n 1 -s
 }
 
 get_package_descriptions() {
@@ -305,7 +307,6 @@ human_readable_bytes() {
     value=$(awk -v b="$value" 'BEGIN{printf "%.2f", b/1024}')
   else
     unit="B"
-    value="$value"
   fi
   echo "${value} ${unit}"
 }
@@ -322,7 +323,7 @@ show_main_menu() {
   mapfile -t sel < <(
     cat <<EOF | fzf --ansi --expect=q,esc,ctrl-c \
       --header="$(echo -e "${CYAN}${BOLD}FZA - Fuzzy APT Package Manager${RESET} | Press ${DIM}q${RESET} to quit | ${DIM}?${RESET} for keybinds")" \
-      --preview='echo -e "${CYAN}${BOLD}FZA - Fuzzy APT Package Manager${RESET}\n"; echo -e "${DIM}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${RESET}\n"; echo -e "Select an operation to manage packages\n\n${GREEN}${BOLD}Available operations:${RESET}\n  ${ICON_SEARCH}  Search & Install - Find and install packages\n  ${ICON_REMOVE}  Remove Packages - Uninstall selected packages\n  ${ICON_LIST}   List Installed - Browse installed packages\n  ${ICON_UPDATE}  Update Lists - Refresh package database\n  ${ICON_UPGRADE}  Upgrade All - Update all installed packages\n  ${ICON_INFO}   Package Info - Detailed package information\n  🧹  Autoremove - Remove unused packages\n  🔧  Fix Broken - Fix dependency issues\n  📊  Statistics - Show package statistics\n  🚀  History - View operation history\n  🌐  Fetch Mirrors - Benchmark and configure mirrors\n\n${ICON_BAT} ${DIM}All previews use ${bat_cmd} for syntax highlighting${RESET}"' \
+      --preview="echo -e \"${CYAN}${BOLD}FZA - Fuzzy APT Package Manager${RESET}\n\"; echo -e \"${DIM}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${RESET}\n\"; echo -e \"Select an operation to manage packages\n\n${GREEN}${BOLD}Available operations:${RESET}\n  ${ICON_SEARCH}  Search & Install - Find and install packages\n  ${ICON_REMOVE}  Remove Packages - Uninstall selected packages\n  ${ICON_LIST}   List Installed - Browse installed packages\n  ${ICON_UPDATE}  Update Lists - Refresh package database\n  ${ICON_UPGRADE}  Upgrade All - Update all installed packages\n  ${ICON_INFO}   Package Info - Detailed package information\n  🧹  Autoremove - Remove unused packages\n  🔧  Fix Broken - Fix dependency issues\n  📊  Statistics - Show package statistics\n  🚀  History - View operation history\n  🌐  Fetch Mirrors - Benchmark and configure mirrors\n\n${ICON_BAT} ${DIM}All previews use ${bat_cmd} for syntax highlighting${RESET}\"" \
       --preview-window='down:50%:hidden:wrap:border-top' \
       --height=70% \
       --bind='?:execute('"$(declare -f show_keybinds)"'; show_keybinds)'
@@ -392,17 +393,17 @@ search_install_packages() {
         --multi \
         --header="$(echo -e "${YELLOW}${BOLD}Search & Install Packages${RESET}\n$(get_keybind_header)")" \
         --preview-window='right:50%:hidden:wrap:border-left:~3' \
-        --preview='pkg=$(echo {} | awk "{print \$1}"); '"$(
+        --preview="pkg=\$(echo {} | awk '{print \$1}'); $(
           declare -f get_package_info
           declare -f get_package_manager
           declare -f get_bat_command
-        )"'; get_package_info "$pkg"' \
+        ); get_package_info \"\$pkg\"" \
         --bind='?:execute('"$(declare -f show_keybinds)"'; show_keybinds)' \
         --bind="ctrl-r:reload($(
           declare -f get_package_descriptions
           declare -f get_package_manager
         ); get_package_descriptions)" \
-        --bind='alt-i:execute(sh -c '\''apt-cache show "$1" 2>/dev/null | { '"$(get_bat_command)"' --language=ini --style=plain --color=always 2>/dev/null || cat; } | less -R'\'' -- {1})'
+        --bind="alt-i:execute(sh -c 'apt-cache show \"\$1\" 2>/dev/null | { $(get_bat_command) --language=ini --style=plain --color=always 2>/dev/null || cat; } | less -R' -- {1})"
   )
 
   local key="${sel[0]:-}"
@@ -422,7 +423,7 @@ search_install_packages() {
 
   if [ -z "$packages" ]; then
     echo -e "${YELLOW}No packages selected${RESET}"
-    read -p "Press ENTER to return to menu..."
+    read -r -p "Press ENTER to return to menu..."
     show_main_menu
     return
   fi
@@ -441,7 +442,7 @@ search_install_packages() {
 
   if ! $pkg_manager install -y "${packages_array[@]}"; then
     echo -e "${RED}${ICON_CROSS} Installation failed!${RESET}"
-    read -p "Press ENTER to return to menu..."
+    read -r -p "Press ENTER to return to menu..."
     show_main_menu
     return
   fi
@@ -449,7 +450,7 @@ search_install_packages() {
   log_action "INSTALL" "$packages"
 
   echo -e "\n${GREEN}${ICON_CHECK} Installation complete!${RESET}"
-  read -p "Press ENTER to return to menu..."
+  read -r -p "Press ENTER to return to menu..."
   show_main_menu
 }
 
@@ -474,19 +475,19 @@ remove_packages() {
         --multi \
         --header="$(echo -e "${YELLOW}${BOLD}Remove Packages${RESET}\n$(get_keybind_header)")" \
         --preview-window='right:50%:hidden:wrap:border-left:~3' \
-        --preview='pkg=$(echo {} | awk "{print \$1}"); 
-           bat_cmd='"$(get_bat_command)"';
-           echo -e "\033[1;36m╔══════════════════════════════════════════════════════════════╗\033[0m";
-           echo -e "\033[1;36m║ Package: \033[1;31m$pkg\033[1;36m\033[0m";
-           echo -e "\033[1;36m╚══════════════════════════════════════════════════════════════╝\033[0m";
-           echo "";
-           dpkg -s "$pkg" 2>/dev/null | head -30 | $bat_cmd --language=ini --style=plain --color=always -p 2>/dev/null || dpkg -s "$pkg" 2>/dev/null | head -30;
-           echo "";
-           echo -e "\033[1;36m════ Dependencies ════\033[0m";
-           apt-cache depends "$pkg" 2>/dev/null | head -15 | $bat_cmd --language=sh --style=plain --color=always -p 2>/dev/null || apt-cache depends "$pkg" 2>/dev/null | head -15;
-           ' \
+        --preview="pkg=\$(echo {} | awk '{print \$1}'); 
+           bat_cmd=\"$(get_bat_command)\";
+           echo -e \"\033[1;36m╔══════════════════════════════════════════════════════════════╗\033[0m\";
+           echo -e \"\033[1;36m║ Package: \033[1;31m\$pkg\033[1;36m\033[0m\";
+           echo -e \"\033[1;36m╚══════════════════════════════════════════════════════════════╝\033[0m\";
+           echo \"\";
+           dpkg -s \"\$pkg\" 2>/dev/null | head -30 | \$bat_cmd --language=ini --style=plain --color=always -p 2>/dev/null || dpkg -s \"\$pkg\" 2>/dev/null | head -30;
+           echo \"\";
+           echo -e \"\033[1;36m════ Dependencies ════\033[0m\";
+           apt-cache depends \"\$pkg\" 2>/dev/null | head -15 | \$bat_cmd --language=sh --style=plain --color=always -p 2>/dev/null || apt-cache depends \"\$pkg\" 2>/dev/null | head -15;
+           " \
         --bind='?:execute('"$(declare -f show_keybinds)"'; show_keybinds)' \
-        --bind='alt-i:execute(sh -c '\''dpkg -s "$1" 2>/dev/null | { '"$(get_bat_command)"' --language=ini --style=plain --color=always 2>/dev/null || cat; } | less -R'\'' -- {1})' \
+        --bind="alt-i:execute(sh -c 'dpkg -s \"\$1\" 2>/dev/null | { $(get_bat_command) --language=ini --style=plain --color=always 2>/dev/null || cat; } | less -R' -- {1})" \
         --bind="alt-f:execute(dpkg -L {1} 2>/dev/null | less -R)"
   )
 
@@ -507,7 +508,7 @@ remove_packages() {
 
   if [ -z "$packages" ]; then
     echo -e "${YELLOW}No packages selected${RESET}"
-    read -p "Press ENTER to return to menu..."
+    read -r -p "Press ENTER to return to menu..."
     show_main_menu
     return
   fi
@@ -524,10 +525,10 @@ remove_packages() {
   done
   echo ""
 
-  read -p "Are you sure you want to remove these packages? (y/N): " confirm
+  read -r -p "Are you sure you want to remove these packages? (y/N): " confirm
   if [[ ! "$confirm" =~ ^[Yy]$ ]]; then
     echo -e "${YELLOW}Cancelled${RESET}"
-    read -p "Press ENTER to return to menu..."
+    read -r -p "Press ENTER to return to menu..."
     show_main_menu
     return
   fi
@@ -540,7 +541,7 @@ remove_packages() {
 
   if ! $pkg_manager remove -y "${packages_array[@]}"; then
     echo -e "${RED}${ICON_CROSS} Removal failed!${RESET}"
-    read -p "Press ENTER to return to menu..."
+    read -r -p "Press ENTER to return to menu..."
     show_main_menu
     return
   fi
@@ -548,7 +549,7 @@ remove_packages() {
   log_action "REMOVE" "$packages"
 
   echo -e "\n${GREEN}${ICON_CHECK} Removal complete!${RESET}"
-  read -p "Press ENTER to return to menu..."
+  read -r -p "Press ENTER to return to menu..."
   show_main_menu
 }
 
@@ -572,16 +573,16 @@ list_installed_packages() {
       fzf --ansi --expect=q,esc,ctrl-c \
         --header="$(echo -e "${YELLOW}${BOLD}Installed Packages${RESET}\n$(get_keybind_header)")" \
         --preview-window='right:50%:hidden:wrap:border-left:~3' \
-        --preview='pkg=$(echo {} | awk "{print \$1}");
-                   bat_cmd='"$(get_bat_command)"';
-                   echo -e "\033[1;36m╔══════════════════════════════════════════════════════════════╗\033[0m";
-                   echo -e "\033[1;36m║ Package Details: \033[1;32m$pkg\033[1;36m\033[0m";
-                   echo -e "\033[1;36m╚══════════════════════════════════════════════════════════════╝\033[0m";
-                   echo "";
-                   dpkg -s "$pkg" 2>/dev/null | head -35 | $bat_cmd --language=ini --style=plain --color=always -p 2>/dev/null || dpkg -s "$pkg" 2>/dev/null | head -35;
-                   ' \
+        --preview="pkg=\$(echo {} | awk '{print \$1}');
+                   bat_cmd=\"$(get_bat_command)\";
+                   echo -e \"\033[1;36m╔══════════════════════════════════════════════════════════════╗\033[0m\";
+                   echo -e \"\033[1;36m║ Package Details: \033[1;32m\$pkg\033[1;36m\033[0m\";
+                   echo -e \"\033[1;36m╚══════════════════════════════════════════════════════════════╝\033[0m\";
+                   echo \"\";
+                   dpkg -s \"\$pkg\" 2>/dev/null | head -35 | \$bat_cmd --language=ini --style=plain --color=always -p 2>/dev/null || dpkg -s \"\$pkg\" 2>/dev/null | head -35;
+                   " \
         --bind='?:execute('"$(declare -f show_keybinds)"'; show_keybinds)' \
-        --bind='alt-i:execute(sh -c '\''dpkg -s "$1" 2>/dev/null | { '"$(get_bat_command)"' --language=ini --style=plain --color=always 2>/dev/null || cat; } | less -R'\'' -- {1})' \
+        --bind="alt-i:execute(sh -c 'dpkg -s \"\$1\" 2>/dev/null | { $(get_bat_command) --language=ini --style=plain --color=always 2>/dev/null || cat; } | less -R' -- {1})" \
         --bind="alt-f:execute(dpkg -L {1} 2>/dev/null | less -R)"
   )
 
@@ -610,7 +611,7 @@ update_package_lists() {
 
   if ! $pkg_manager update; then
     echo -e "${RED}${ICON_CROSS} Update failed!${RESET}"
-    read -p "Press ENTER to return to menu..."
+    read -r -p "Press ENTER to return to menu..."
     show_main_menu
     return
   fi
@@ -620,7 +621,7 @@ update_package_lists() {
   log_action "UPDATE" "package lists"
 
   echo -e "\n${GREEN}${ICON_CHECK} Update complete!${RESET}"
-  read -p "Press ENTER to return to menu..."
+  read -r -p "Press ENTER to return to menu..."
   show_main_menu
 }
 
@@ -634,7 +635,7 @@ upgrade_packages() {
 
   if ! $pkg_manager full-upgrade -y; then
     echo -e "${RED}${ICON_CROSS} Upgrade failed!${RESET}"
-    read -p "Press ENTER to return to menu..."
+    read -r -p "Press ENTER to return to menu..."
     show_main_menu
     return
   fi
@@ -642,7 +643,7 @@ upgrade_packages() {
   log_action "UPGRADE" "all packages"
 
   echo -e "\n${GREEN}${ICON_CHECK} Upgrade complete!${RESET}"
-  read -p "Press ENTER to return to menu..."
+  read -r -p "Press ENTER to return to menu..."
   show_main_menu
 }
 
@@ -658,13 +659,13 @@ show_package_info() {
       fzf --ansi --expect=q,esc,ctrl-c \
         --header="$(echo -e "${YELLOW}${BOLD}Package Information${RESET}\n$(get_keybind_header)")" \
         --preview-window='right:50%:hidden:wrap:border-left:~3' \
-        --preview='pkg={1}; '"$(
+        --preview="pkg={1}; $(
           declare -f get_package_info
           declare -f get_package_manager
           declare -f get_bat_command
-        )"'; get_package_info "$pkg"' \
+        ); get_package_info \"\$pkg\"" \
         --bind='?:execute('"$(declare -f show_keybinds)"'; show_keybinds)' \
-        --bind='alt-i:execute(sh -c '\''apt-cache show "$1" 2>/dev/null | { '"$(get_bat_command)"' --language=ini --style=plain --color=always 2>/dev/null || cat; } | less -R'\'' -- {1})'
+        --bind="alt-i:execute(sh -c 'apt-cache show \"\$1\" 2>/dev/null | { $(get_bat_command) --language=ini --style=plain --color=always 2>/dev/null || cat; } | less -R' -- {1})"
   )
 
   local key="${sel[0]:-}"
@@ -687,7 +688,7 @@ show_package_info() {
     echo -e "${CYAN}${BOLD}Package Information: $package${RESET}\n"
     get_package_info "$package"
     echo ""
-    read -p "Press ENTER to return to menu..."
+    read -r -p "Press ENTER to return to menu..."
   fi
 
   show_main_menu
@@ -703,7 +704,7 @@ autoremove_packages() {
 
   if ! $pkg_manager autoremove -y; then
     echo -e "${RED}${ICON_CROSS} Autoremove failed!${RESET}"
-    read -p "Press ENTER to return to menu..."
+    read -r -p "Press ENTER to return to menu..."
     show_main_menu
     return
   fi
@@ -711,7 +712,7 @@ autoremove_packages() {
   log_action "AUTOREMOVE" "unused packages"
 
   echo -e "\n${GREEN}${ICON_CHECK} Autoremove complete!${RESET}"
-  read -p "Press ENTER to return to menu..."
+  read -r -p "Press ENTER to return to menu..."
   show_main_menu
 }
 
@@ -725,7 +726,7 @@ fix_broken_dependencies() {
 
   if ! $pkg_manager install --fix-broken -y; then
     echo -e "${RED}${ICON_CROSS} Fix failed!${RESET}"
-    read -p "Press ENTER to return to menu..."
+    read -r -p "Press ENTER to return to menu..."
     show_main_menu
     return
   fi
@@ -733,7 +734,7 @@ fix_broken_dependencies() {
   log_action "FIX_BROKEN" "dependencies"
 
   echo -e "\n${GREEN}${ICON_CHECK} Fix complete!${RESET}"
-  read -p "Press ENTER to return to menu..."
+  read -r -p "Press ENTER to return to menu..."
   show_main_menu
 }
 
@@ -741,17 +742,17 @@ run_nala_fetch() {
   show_banner
   if ! command -v nala >/dev/null 2>&1; then
     echo -e "${RED}${BOLD}nala is not installed. Install nala to use fetch mirrors.${RESET}"
-    read -p "Press ENTER to return to menu..."
+    read -r -p "Press ENTER to return to menu..."
     show_main_menu
     return
   fi
 
   echo -e "${CYAN}${BOLD}🌐 Nala Fetch Mirrors${RESET}\n"
   echo -e "${DIM}This will benchmark mirrors and optionally update your sources list.${RESET}\n"
-  read -p "Proceed to run 'nala fetch'? (y/N): " confirm
+  read -r -p "Proceed to run 'nala fetch'? (y/N): " confirm
   if [[ ! "$confirm" =~ ^[Yy]$ ]]; then
     echo -e "${YELLOW}Cancelled${RESET}"
-    read -p "Press ENTER to return to menu..."
+    read -r -p "Press ENTER to return to menu..."
     show_main_menu
     return
   fi
@@ -764,7 +765,7 @@ run_nala_fetch() {
   fi
 
   log_action "NALA_FETCH" "mirror benchmark"
-  read -p "Press ENTER to return to menu..."
+  read -r -p "Press ENTER to return to menu..."
   show_main_menu
 }
 
@@ -807,7 +808,7 @@ EOF
     echo ""
   fi
 
-  read -p "Press ENTER to return to menu..."
+  read -r -p "Press ENTER to return to menu..."
   show_main_menu
 }
 
@@ -847,7 +848,7 @@ show_history() {
   else
     echo -e "${YELLOW}No FZA history found${RESET}"
     echo ""
-    read -p "Press ENTER to return to menu..."
+    read -r -p "Press ENTER to return to menu..."
   fi
 
   show_main_menu
